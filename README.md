@@ -33,3 +33,31 @@ Sistema de **inspeção, monitorização e diagnóstico de barragens de aterro**
 ```bash
 git clone https://github.com/Daniel-t-leite/insid-platform
 cd insid-platform
+
+2️⃣ Cria e ativa um ambiente virtual (opcional mas recomendado):
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate    # Windows
+
+3️⃣ Instala as dependências:
+pip install -r requirements.txt
+
+
+4️⃣ Executa o sistema:
+streamlit run app.py
+
+O navegador abrirá automaticamente em http://localhost:8501.
+
+🛠️ Pré-requisitos
+
+Python 3.10 ou superior
+
+Pip configurado corretamente
+
+Permissão de escrita na pasta do projeto para criação do inSID.db
+Usuário padrão: admin@insid.com
+Senha: admin123
+
+🛰️ Autor
+
+Plataforma inSID gerida e acompanhada por Daniel Teixeira Leite.
