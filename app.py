@@ -2,7 +2,7 @@ import sqlite3
 import streamlit as st
 import re
 import pandas as pd
-from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode
+from streamlit_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode
 import os
 import time
 from datetime import datetime
