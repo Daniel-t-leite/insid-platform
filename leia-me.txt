@@ -1,0 +1,7 @@
+Comandos para iniciar o programa:
+
+.\venv\Scripts\activate
+streamlit run app.py
+
+admin
+admin123
