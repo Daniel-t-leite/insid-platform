@@ -55,8 +55,12 @@ Python 3.10 ou superior
 Pip configurado corretamente
 
 Permissão de escrita na pasta do projeto para criação do inSID.db
+
 Usuário padrão: admin@insid.com
 Senha: admin123
+
+Versão oficial para colaboração com a plataforma:
+https://insid-platform-dam-safety.streamlit.app/
 
 🛰️ Autor
 
