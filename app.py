@@ -174,7 +174,7 @@ def gerenciar_tipos_anomalia():
             )
             
             if not anomalias_associadas.empty:
-                st.error("⛔ Este tipo de anomalia possui registros associados e não pode ser excluído.")
+                st.error("⛔ Este tipo de anomalia possui registos associados e não pode ser excluído.")
             else:
                 if st.button("🗑️ Confirmar Exclusão", type="primary"):
                     try:
@@ -718,9 +718,9 @@ def gerenciar_modos_falha_anomalias():
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    gravidade = st.slider("Gravidade (0-10)*", 0.0, 10.0, 5.0, 0.1)
+                    gravidade = st.slider("Gravidade (0-10)*", 0.0, 10.0, 5.0, 1.0)
                 with col2:
-                    peso = st.slider("Peso (0-10)*", 0.0, 10.0, 5.0, 0.1)
+                    peso = st.slider("Peso (0-10)*", 0.0, 10.0, 3.0, 1.0)
                 
                 # Relacionamentos N:N
                 zonas_selecionadas = st.multiselect(
@@ -855,9 +855,9 @@ def gerenciar_modos_falha_anomalias():
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        nova_gravidade = st.slider("Gravidade (0-10)*", 0.0, 10.0, float(anomalia['gravidade']), 0.1)
+                        nova_gravidade = st.slider("Gravidade (0-10)*", 0.0, 10.0, float(anomalia['gravidade']), 1.0)
                     with col2:
-                        novo_peso = st.slider("Peso (0-10)*", 0.0, 10.0, float(anomalia['peso']), 0.1)
+                        novo_peso = st.slider("Peso (0-10)*", 0.0, 10.0, float(anomalia['peso']), 1.0)
                     
                     novas_zonas = st.multiselect(
                         "Zonas relacionadas:",
@@ -1515,23 +1515,6 @@ def gerenciar_tipos_materiais():
         st.session_state['pagina'] = "principal"
         st.rerun()
 
-# def cadastrar_tipo_material_db(usuario_id, nome, descricao=None):
-#     """Insere novo tipo de material no banco de dados"""
-#     conn = conectar_db()
-#     cursor = conn.cursor()
-#     try:
-#         cursor.execute("""
-#             INSERT INTO tipos_materiais (usuario_id, nome, descricao)
-#             VALUES (?, ?, ?)
-#         """, (usuario_id, nome, descricao))
-#         conn.commit()
-#         return (True, "✅ Material cadastrado com sucesso!")
-#     except sqlite3.IntegrityError:
-#         return (False, "⛔ Já existe um material com esse nome.")
-#     except Exception as e:
-#         return (False, f"Erro inesperado: {str(e)}")
-#     finally:
-#         conn.close()
 
 def gerenciar_tipos_zonas():
     """Página de gerenciamento dos tipos de zonas de barragens"""
@@ -2479,10 +2462,10 @@ def registrar_anomalia(
     data_observacao: str
 ) -> bool:
     """
-    Registra uma nova anomalia no banco de dados
+    Regista uma nova anomalia no banco de dados
     
     Returns:
-        True se o registro foi bem sucedido, False caso contrário
+        True se o registo foi bem sucedido, False caso contrário
     """
     conn = None
     try:
@@ -2507,7 +2490,7 @@ def registrar_anomalia(
         return True
         
     except sqlite3.Error as e:
-        st.error(f"Erro ao registrar anomalia: {str(e)}")
+        st.error(f"Erro ao registar anomalia: {str(e)}")
         return False
     finally:
         if conn:
@@ -2705,7 +2688,7 @@ def identificar_modo_falha_provavel(barragem_id):
         
         st.subheader(f"🔍 Análise para Barragem (Tipo: {tipo_barragem['tipo_nome']})")
         
-        if st.button("🔍 Calcular Modo de Falha Provável", type="primary"):
+        if st.button("🔍 Pesquisar modo de falha", type="primary"):
             with st.spinner("Processando critérios de análise..."):
                 # 1. Obter modos de falha associados ao tipo desta barragem (incluindo imagem e descrição)
                 modos_falha = pd.read_sql(f"""
@@ -2742,6 +2725,7 @@ def identificar_modo_falha_provavel(barragem_id):
                 # 3. Para cada modo de falha, calcular o score
                 for _, mf in modos_falha.iterrows():
                     score_total = 0.0
+                    contribuicao_total = 0.0
                     anomalias_contribuintes = []
                     
                     # Obter todas as anomalias do sistema para este modo de falha
@@ -2757,9 +2741,18 @@ def identificar_modo_falha_provavel(barragem_id):
                     """, conn)
                     
                     # Para cada anomalia observada, verificar correspondência
+
                     for _, obs in anomalias_obs.iterrows():
                         # Verificar se há correspondência com anomalias do sistema
+                        
+                        peso_total_modo_falha = 0.0
+
                         for _, anom in anomalias_sistema.iterrows():
+
+                            # Estavariável contem o somatório total do peso de cada modo de falha (de modo a possibitar que a correpondencia com todas as anomalias observada corresponda a 100%)
+                            peso_total_modo_falha = peso_total_modo_falha + anom['peso']
+                            
+
                             if anom['tipo_anomalia_id'] == obs['tipo_anomalia_id']:
                                 # Verificar material (anomalia_tipo_material)
                                 material_match = pd.read_sql(f"""
@@ -2779,9 +2772,13 @@ def identificar_modo_falha_provavel(barragem_id):
                                 
                                 # Se atender aos critérios, calcular contribuição
                                 if material_match and zona_match:
-                                    contribuicao = anom['peso'] * (1 + 0.5*material_match + 0.5*zona_match)
-                                    score_total += contribuicao
+                                    # contribuicao = anom['peso'] * (1 + 0.5*material_match + 0.5*zona_match)
+                                    # score_total += contribuicao
                                     
+                                    # Soma dos pesos registados
+                                    contribuicao = anom['peso'] * 1                 
+                                    contribuicao_total += contribuicao
+
                                     anomalias_contribuintes.append({
                                         'anomalia_obs_id': obs['id'],
                                         'anomalia_obs_nome': obs['anomalia_nome'],
@@ -2792,7 +2789,14 @@ def identificar_modo_falha_provavel(barragem_id):
                                         'peso': anom['peso'],
                                         'contribuicao': contribuicao
                                     })
-                    
+                    # O Cálculo do score leva em consideração o somatório de todos os pesos das anomalia atribuidas, de modo que a correspondencia da totalidade das anomalias observadas correponda a 100% 
+                    if contribuicao_total > 0:                        
+                        score_total = (contribuicao_total / peso_total_modo_falha) * 100
+                        # print (mf['nome'])
+                        # print (contribuicao_total)
+                        # print (peso_total_modo_falha)
+
+
                     if score_total > 0:
                         resultados.append({
                             'modo_falha_id': mf['id'],
@@ -2813,7 +2817,8 @@ def identificar_modo_falha_provavel(barragem_id):
                 # Normalizar scores para porcentagem
                 total_score = sum(r['score_total'] for r in resultados)
                 for r in resultados:
-                    r['probabilidade'] = (r['score_total'] / total_score) * 100
+                    # r['probabilidade'] = (r['score_total'] / total_score) * 100
+                    r['probabilidade'] = (r['score_total'])
                 
                 # Exibir resultados
                 st.success("🎯 Resultados da Análise")
@@ -2821,17 +2826,17 @@ def identificar_modo_falha_provavel(barragem_id):
                 # Gráfico de probabilidades
                 df_plot = pd.DataFrame({
                     'Modo de Falha': [r['modo_falha_nome'] for r in resultados],
-                    'Probabilidade (%)': [r['probabilidade'] for r in resultados]
+                    'Compatibilidade (%)': [r['probabilidade'] for r in resultados]
                 })
                 
                 fig = px.bar(
                     df_plot,
                     x='Modo de Falha',
-                    y='Probabilidade (%)',
+                    y='Compatibilidade (%)',
                     color='Modo de Falha',
-                    text='Probabilidade (%)',
-                    title='Probabilidade por Modo de Falha',
-                    labels={'Probabilidade (%)': 'Probabilidade (%)'}
+                    text='Compatibilidade (%)',
+                    title='Compatibilidade com Modo de Falha mais Provável',
+                    labels={'Compatibilidade (%)': 'Compatibilidade (%)'}
                 )
                 fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
                 st.plotly_chart(fig, use_container_width=True)
@@ -2935,7 +2940,7 @@ def pagina_principal():
             tab_listar, tab_adicionar, tab_editar = st.tabs(["📋 Listar Anomalias", "➕ Adicionar Anomalia", "✏️ Editar/Excluir"])
 
             with tab_listar:
-                st.write("### Lista de Anomalias Registradas")
+                st.write("### Lista de Anomalias Registadas")
                 anomalias = obter_anomalias_barragem(barragem_analise[0])
                 if anomalias:
                     for anomalia in anomalias:
@@ -2963,11 +2968,11 @@ def pagina_principal():
                                 st.write("**Fontes de detecção:**", " | ".join(fontes) if fontes else "Nenhuma")
 
                     st.markdown("---")
-                    st.subheader("🎯 Identificação do modo de falha provável")
+                    st.subheader("🎯 Identificação de possíveis modos de falha mais prováveis")
                     identificar_modo_falha_provavel(barragem_analise[0])
 
                 else:
-                    st.info("Nenhuma anomalia registrada para esta barragem")
+                    st.info("Nenhuma anomalia registada para esta barragem")
 
             with tab_adicionar:
                 st.write("### Registrar nova anomalia")
@@ -3006,7 +3011,7 @@ def pagina_principal():
                         fonte_insar = st.checkbox("InSAR")
                         fonte_satellite = st.checkbox("Satélite")
 
-                    if st.form_submit_button("✅ Registrar Anomalia"):
+                    if st.form_submit_button("✅ Registar Anomalia"):
                         if not descricao.strip():
                             st.error("A descrição é obrigatória")
                         elif not any([fonte_visual, fonte_instrumentacao, fonte_drones, fonte_insar, fonte_satellite]):
@@ -3028,7 +3033,7 @@ def pagina_principal():
                                 data_observacao=data_observacao.strftime('%Y-%m-%d')
                             )
                             if sucesso:
-                                st.success("Anomalia registrada com sucesso!")
+                                st.success("Anomalia registada com sucesso!")
                                 st.rerun()
 
             with tab_editar:
@@ -3114,7 +3119,7 @@ def pagina_principal():
                                     else:
                                         st.error("Erro ao atualizar anomalia")
                 else:
-                    st.info("Nenhuma anomalia registrada para esta barragem")
+                    st.info("Nenhuma anomalia registada para esta barragem")
 
     else:
         st.warning("Você ainda não cadastrou nenhuma barragem. Vá para a seção de barragens para criar uma.")
